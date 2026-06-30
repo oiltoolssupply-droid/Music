@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>تمرین گام ماژور</title>
+<style>
+:root{
+  --bg:#f4f5f7; --card:#fff; --ink:#202124; --muted:#6b7280; --line:#e5e7eb;
+  --accent:#1f2937; --ok:#15803d; --bad:#b91c1c; --soft:#f9fafb;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);font-family:Tahoma,Arial,sans-serif;color:var(--ink)}
+.app{max-width:980px;margin:0 auto;padding:16px}
+.header{background:linear-gradient(135deg,#111827,#374151);color:white;border-radius:18px;padding:18px;margin-bottom:14px}
+.header h1{margin:0 0 6px;font-size:24px}
+.header p{margin:0;color:#e5e7eb;line-height:1.7}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}
+.tab{border:1px solid var(--line);background:white;border-radius:12px;padding:12px;cursor:pointer;font-weight:bold}
+.tab.active{background:#111827;color:white}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin:12px 0;box-shadow:0 2px 8px #00000008}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+button,select,input{font-family:Tahoma,Arial,sans-serif;font-size:15px;border-radius:10px;border:1px solid #d1d5db;padding:10px;background:white}
+button{background:#111827;color:white;cursor:pointer;border:none}
+button.secondary{background:#f3f4f6;color:#111827;border:1px solid #d1d5db}
+button.ghost{background:white;color:#111827;border:1px solid #d1d5db}
+button:disabled{opacity:.45;cursor:not-allowed}
+select,input{color:#111827}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:760px){.grid,.tabs{grid-template-columns:1fr}.app{padding:10px}}
+.small{font-size:13px;color:var(--muted);line-height:1.7}
+.big{font-size:22px;font-weight:bold;line-height:1.7}
+.badge{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:6px 10px;background:#f9fafb;margin:3px}
+.locked{opacity:.5}
+.scaleList{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:8px}
+.scaleItem{border:1px solid var(--line);border-radius:12px;padding:10px;background:#fff;cursor:pointer}
+.scaleItem.active{border-color:#111827;background:#f3f4f6}
+.scaleItem .name{font-weight:bold}
+.staffBox{direction:ltr;background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px;overflow-x:auto}
+svg{max-width:100%;height:auto}
+.options{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+@media(max-width:600px){.options{grid-template-columns:1fr}}
+.option{background:#fff;color:#111827;border:1px solid #d1d5db;text-align:center}
+.option.correct{background:#dcfce7;border-color:#16a34a}
+.option.wrong{background:#fee2e2;border-color:#dc2626}
+.feedback{padding:12px;border-radius:12px;margin-top:12px;line-height:1.8}
+.feedback.ok{background:#dcfce7;color:#14532d}
+.feedback.bad{background:#fee2e2;color:#7f1d1d}
+table{width:100%;border-collapse:collapse;background:white}
+th,td{border:1px solid var(--line);padding:9px;text-align:center}
+th{background:#f9fafb}
+.hidden{display:none!important}
+.ltr{direction:ltr}
+.progressbar{height:10px;background:#e5e7eb;border-radius:999px;overflow:hidden}
+.progressbar span{display:block;height:100%;background:#111827;width:0}
+.footerNote{font-size:12px;color:#6b7280;text-align:center;margin:20px 0}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>تمرین گام‌های ماژور</h1>
+    <p>نسخه ۱: فقط ۷ گام توافق‌شده، نام‌گذاری فارسی، کلید سل، سرکلید واقعی، و تمرین مرحله‌ای.</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="learn">📚 یادگیری</button>
+    <button class="tab" data-tab="practice">📝 تمرین</button>
+    <button class="tab" data-tab="exam">🎯 آزمون</button>
+    <button class="tab" data-tab="manage">⚙️ تنظیمات</button>
+  </div>
+
+  <section id="learn" class="panel">
+    <div class="card">
+      <div class="row">
+        <label>انتخاب گام:</label>
+        <select id="learnScale"></select>
+        <button onclick="renderLearn()">نمایش</button>
+        <button class="secondary" onclick="manualUnlockNext()">باز کردن گام بعدی</button>
+      </div>
+      <p class="small">پیشنهاد: اول هر گام را یاد بگیر، بعد وارد تمرین شو. گام بعدی با امتیاز خوب باز می‌شود، ولی می‌توانی دستی هم باز کنی.</p>
+    </div>
+
+    <div class="card" id="learnCard"></div>
+
+    <div class="card">
+      <h3>مسیر یادگیری</h3>
+      <div class="scaleList" id="scalePath"></div>
+    </div>
+  </section>
+
+  <section id="practice" class="panel hidden">
+    <div class="card">
+      <div class="row">
+        <label>حالت تمرین:</label>
+        <select id="practiceMode">
+          <option value="mixed">ترکیبی</option>
+          <option value="sigToScale">سرکلید → نام گام</option>
+          <option value="sharpCountToScale">تعداد دیز → نام گام</option>
+          <option value="flatCountToScale">تعداد بمل → نام گام</option>
+          <option value="scaleToCount">نام گام → تعداد دیز/بمل</option>
+          <option value="scaleToSig">نام گام → انتخاب سرکلید</option>
+          <option value="typeSigToScale">سرکلید → تایپ نام گام</option>
+          <option value="alteredNotes">نام گام → نت‌های تغییر یافته</option>
+        </select>
+        <label>پاسخ:</label>
+        <select id="answerMode">
+          <option value="choice">چندگزینه‌ای</option>
+          <option value="type">تایپی</option>
+        </select>
+        <button onclick="newPracticeQuestion()">سؤال جدید</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div id="practiceQuestion" class="big">برای شروع روی «سؤال جدید» بزنید.</div>
+      <div id="practiceNotation"></div>
+      <div id="practiceOptions" class="options"></div>
+      <div id="typeBox" class="row hidden">
+        <input id="typedAnswer" placeholder="مثلاً: ر ماژور" style="flex:1">
+        <button onclick="checkTyped()">بررسی</button>
+      </div>
+      <div id="practiceFeedback"></div>
+      <p class="small">امتیاز تمرین: <span id="pScore">۰</span> درست از <span id="pTotal">۰</span></p>
+    </div>
+  </section>
+
+  <section id="exam" class="panel hidden">
+    <div class="card">
+      <h3>آزمون کوتاه</h3>
+      <p class="small">۱۰ سؤال ترکیبی، بدون راهنمایی فوری. نتیجه در پایان نمایش داده می‌شود.</p>
+      <button onclick="startExam()">شروع آزمون</button>
+      <button class="secondary" onclick="finishExam()" id="finishExamBtn" disabled>پایان آزمون</button>
+    </div>
+    <div class="card">
+      <div id="examStatus" class="small">آزمون شروع نشده است.</div>
+      <div id="examQuestion" class="big"></div>
+      <div id="examNotation"></div>
+      <div id="examOptions" class="options"></div>
+      <div id="examResult"></div>
+    </div>
+  </section>
+
+  <section id="manage" class="panel hidden">
+    <div class="card">
+      <h3>۷ گام نسخه ۱</h3>
+      <table>
+        <thead><tr><th>ترتیب</th><th>گام</th><th>علائم</th><th>نت‌های تغییر یافته</th></tr></thead>
+        <tbody id="scaleTable"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3>افزودن گام جدید برای بعداً</h3>
+      <p class="small">فعلاً اپ با همین ۷ گام کار می‌کند، ولی می‌توانی گام جدید ذخیره کنی تا بعداً توسعه بدهیم.</p>
+      <div class="row">
+        <input id="newScaleName" placeholder="نام گام، مثلاً فا دیز ماژور">
+        <select id="newAccType">
+          <option value="sharp">دیز</option>
+          <option value="flat">بمل</option>
+          <option value="none">بدون علامت</option>
+        </select>
+        <input id="newAccCount" type="number" min="0" max="7" value="0" style="width:90px">
+        <input id="newAltered" placeholder="نت‌های تغییر یافته، مثلاً فا♯، دو♯">
+        <button onclick="saveNewScale()">ذخیره</button>
+      </div>
+      <div id="customScales" class="small"></div>
+    </div>
+
+    <div class="card">
+      <h3>پیشرفت</h3>
+      <div id="progressView"></div>
+      <button class="secondary" onclick="resetProgress()">ریست پیشرفت</button>
+    </div>
+  </section>
+
+  <div class="footerNote">همه چیز داخل مرورگر ذخیره می‌شود؛ نیاز به اینترنت ندارد.</div>
+</div>
+
+<script>
+const faDigits = n => String(n).replace(/\d/g, d => "۰۱۲۳۴۵۶۷۸۹"[d]);
+const SHARP_ORDER = ["فا♯","دو♯","سل♯","ر♯","لا♯","می♯","سی♯"];
+const FLAT_ORDER = ["سی♭","می♭","لا♭","ر♭","سل♭","دو♭","فا♭"];
+
+const scales = [
+  {id:"do", name:"دو ماژور", type:"none", count:0, altered:[], notes:["دو","ر","می","فا","سل","لا","سی","دو"], tip:"دو ماژور هیچ دیز یا بملی ندارد."},
+  {id:"sol", name:"سل ماژور", type:"sharp", count:1, altered:["فا♯"], notes:["سل","لا","سی","دو","ر","می","فا♯","سل"], tip:"اولین دیز همیشه فا♯ است؛ بعد از فا♯، گام سل ماژور است."},
+  {id:"re", name:"ر ماژور", type:"sharp", count:2, altered:["فا♯","دو♯"], notes:["ر","می","فا♯","سل","لا","سی","دو♯","ر"], tip:"۲ دیز یعنی فا♯ و دو♯؛ آخرین دیز دو♯ است و نیم‌پرده بالاتر می‌شود ر."},
+  {id:"la", name:"لا ماژور", type:"sharp", count:3, altered:["فا♯","دو♯","سل♯"], notes:["لا","سی","دو♯","ر","می","فا♯","سل♯","لا"], tip:"۳ دیز: فا♯، دو♯، سل♯. نیم‌پرده بالاتر از سل♯ می‌شود لا."},
+  {id:"mi", name:"می ماژور", type:"sharp", count:4, altered:["فا♯","دو♯","سل♯","ر♯"], notes:["می","فا♯","سل♯","لا","سی","دو♯","ر♯","می"], tip:"۴ دیز: فا♯، دو♯، سل♯، ر♯. بعد از ر♯ به می می‌رسیم."},
+  {id:"si", name:"سی ماژور", type:"sharp", count:5, altered:["فا♯","دو♯","سل♯","ر♯","لا♯"], notes:["سی","دو♯","ر♯","می","فا♯","سل♯","لا♯","سی"], tip:"۵ دیز: فا♯، دو♯، سل♯، ر♯، لا♯. بعد از لا♯، گام سی ماژور است."},
+  {id:"fa", name:"فا ماژور", type:"flat", count:1, altered:["سی♭"], notes:["فا","سل","لا","سی♭","دو","ر","می","فا"], tip:"فا ماژور تنها گام بمل‌دار نسخه ۱ است: سی♭."}
+];
+
+let state = JSON.parse(localStorage.getItem("musicTheoryPersianV1")||"{}");
+if(!state.unlocked) state.unlocked = {do:true, sol:true};
+if(!state.stats) state.stats = {};
+if(!state.custom) state.custom = [];
+let current = null, currentTarget = null;
+let pScore=0,pTotal=0;
+let exam = null;
+
+function save(){localStorage.setItem("musicTheoryPersianV1", JSON.stringify(state));}
+function unlockedScales(){return scales.filter(s=>state.unlocked[s.id]);}
+function accText(s){
+  if(s.type==="none") return "بدون علامت";
+  const word = s.type==="sharp" ? "دیز" : "بمل";
+  const sym = s.type==="sharp" ? "♯" : "♭";
+  return `${faDigits(s.count)} ${word} (${sym.repeat(s.count)})`;
+}
+function alteredText(s){return s.altered.length ? s.altered.join("، ") : "—";}
+
+function drawStaff(scale, small=false){
+  const yLines=[50,70,90,110,130];
+  const sharpPos=[50,95,40,85,130,75,120]; // approximate treble order
+  const flatPos=[120,75,130,85,140,95,150];
+  let acc="";
+  const positions = scale.type==="sharp" ? sharpPos : flatPos;
+  const symbol = scale.type==="sharp" ? "♯" : "♭";
+  for(let i=0;i<scale.count;i++){
+    acc += `<text x="${115+i*24}" y="${positions[i]}" font-size="34" font-family="Arial">${symbol}</text>`;
+  }
+  return `<div class="staffBox">
+  <svg width="${small?360:520}" height="180" viewBox="0 0 520 180" aria-label="سرکلید ${scale.name}">
+    ${yLines.map(y=>`<line x1="20" y1="${y}" x2="490" y2="${y}" stroke="#111" stroke-width="1.4"/>`).join("")}
+    <text x="38" y="126" font-size="82" font-family="serif">𝄞</text>
+    ${acc}
+    <text x="360" y="165" font-size="18" font-family="Tahoma" direction="rtl">${scale.name}</text>
+  </svg></div>`;
+}
+
+function renderScaleSelectors(){
+  const opts = scales.map(s=>`<option value="${s.id}" ${!state.unlocked[s.id]?"disabled":""}>${s.name}${!state.unlocked[s.id]?" 🔒":""}</option>`).join("");
+  document.getElementById("learnScale").innerHTML=opts;
+}
+function renderPath(){
+  document.getElementById("scalePath").innerHTML = scales.map((s,i)=>{
+    const st = getScaleStats(s.id);
+    const pct = st.total ? Math.round(st.correct/st.total*100) : 0;
+    return `<div class="scaleItem ${state.unlocked[s.id]?'':'locked'}" onclick="selectLearn('${s.id}')">
+      <div class="name">${faDigits(i+1)}. ${s.name} ${state.unlocked[s.id]?'🔓':'🔒'}</div>
+      <div class="small">${accText(s)}</div>
+      <div class="progressbar"><span style="width:${pct}%"></span></div>
+      <div class="small">دقت: ${faDigits(pct)}٪</div>
+    </div>`
+  }).join("");
+}
+function renderLearn(){
+  const id = document.getElementById("learnScale").value;
+  const s = scales.find(x=>x.id===id) || scales[0];
+  document.getElementById("learnCard").innerHTML = `
+    <h2>${s.name}</h2>
+    ${drawStaff(s)}
+    <div class="grid">
+      <div><b>علائم سرکلید:</b><br><span class="badge">${accText(s)}</span></div>
+      <div><b>نت‌های تغییر یافته:</b><br><span class="badge">${alteredText(s)}</span></div>
+      <div><b>نت‌های گام:</b><br><span class="badge">${s.notes.join("، ")}</span></div>
+      <div><b>نکته حفظی:</b><br><span class="small">${s.tip}</span></div>
+    </div>
+    <br><button onclick="goPractice('${s.id}')">شروع تمرین با این گام</button>`;
+  renderPath();
+}
+function selectLearn(id){ if(state.unlocked[id]){document.getElementById("learnScale").value=id; renderLearn();}}
+function goPractice(id){showTab("practice"); newPracticeQuestion(id);}
+function manualUnlockNext(){
+  const idx=scales.findIndex(s=>!state.unlocked[s.id]);
+  if(idx>=0){state.unlocked[scales[idx].id]=true; save(); init(); alert("گام بعدی باز شد.");}
+}
+function maybeUnlock(){
+  for(let i=0;i<scales.length-1;i++){
+    const s=scales[i], next=scales[i+1];
+    const st=getScaleStats(s.id);
+    if(state.unlocked[s.id] && !state.unlocked[next.id] && st.total>=8 && st.correct/st.total>=0.9){
+      state.unlocked[next.id]=true; save(); alert(`آفرین! ${next.name} باز شد.`);
+    }
+  }
+}
+function getScaleStats(id){ if(!state.stats[id]) state.stats[id]={correct:0,total:0}; return state.stats[id];}
+function updateStats(id,correct){
+  const st=getScaleStats(id); st.total++; if(correct)st.correct++; save(); maybeUnlock(); renderProgress();
+}
+
+function questionModes(){
+  return ["sigToScale","sharpCountToScale","flatCountToScale","scaleToCount","scaleToSig","typeSigToScale","alteredNotes"];
+}
+function random(arr){return arr[Math.floor(Math.random()*arr.length)];}
+function makeQuestion(mode, forcedId=null){
+  const pool = unlockedScales();
+  const target = forcedId ? scales.find(s=>s.id===forcedId) : random(pool);
+  if(mode==="mixed") mode=random(questionModes());
+  if(mode==="flatCountToScale" && !pool.some(s=>s.type==="flat")) mode="sigToScale";
+  if(mode==="sharpCountToScale" && !pool.some(s=>s.type==="sharp"&&s.count>0)) mode="sigToScale";
+
+  let q="", notation="", answer="", answerType="scale";
+  if(mode==="sigToScale" || mode==="typeSigToScale"){
+    q="این سرکلید مربوط به کدام گام است؟";
+    notation=drawStaff(target);
+    answer=target.name;
+  } else if(mode==="sharpCountToScale"){
+    const candidates=pool.filter(s=>s.type==="sharp" && s.count>0);
+    const t=random(candidates);
+    return makeSpecific(`کدام گام دارای ${faDigits(t.count)} دیز (${ "♯".repeat(t.count) }) است؟`, "", t.name, t, "scale");
+  } else if(mode==="flatCountToScale"){
+    const candidates=pool.filter(s=>s.type==="flat");
+    const t=random(candidates);
+    return makeSpecific(`کدام گام دارای ${faDigits(t.count)} بمل (${ "♭".repeat(t.count) }) است؟`, "", t.name, t, "scale");
+  } else if(mode==="scaleToCount"){
+    q=`گام ${target.name} چند دیز یا بمل دارد؟`;
+    answer=accText(target);
+    answerType="count";
+  } else if(mode==="scaleToSig"){
+    q=`کدام سرکلید مربوط به ${target.name} است؟`;
+    answer=target.name;
+    answerType="signature";
+  } else if(mode==="alteredNotes"){
+    q=`نت‌های تغییر یافته در ${target.name} کدام است؟`;
+    answer=alteredText(target);
+    answerType="altered";
+  }
+  return {mode,q,notation,answer,target,answerType};
+}
+function makeSpecific(q,notation,answer,target,answerType){return {q,notation,answer,target,answerType};}
+
+function makeOptions(q){
+  if(q.answerType==="count"){
+    let all=[...new Set(scales.map(accText))];
+    return shuffle([q.answer,...shuffle(all.filter(x=>x!==q.answer)).slice(0,3)]);
+  }
+  if(q.answerType==="altered"){
+    let all=[...new Set(scales.map(alteredText))];
+    return shuffle([q.answer,...shuffle(all.filter(x=>x!==q.answer)).slice(0,3)]);
+  }
+  if(q.answerType==="signature"){
+    let opts=shuffle([q.target,...shuffle(scales.filter(s=>s.id!==q.target.id)).slice(0,3)]);
+    return opts.map(s=>({label:drawStaff(s,true), value:s.name}));
+  }
+  let opts=shuffle([q.answer,...shuffle(scales.map(s=>s.name).filter(x=>x!==q.answer)).slice(0,3)]);
+  return opts;
+}
+function shuffle(a){return [...a].sort(()=>Math.random()-.5);}
+
+function newPracticeQuestion(forcedId=null){
+  const mode=document.getElementById("practiceMode").value;
+  current=makeQuestion(mode,forcedId); currentTarget=current.target;
+  document.getElementById("practiceQuestion").innerHTML=current.q;
+  document.getElementById("practiceNotation").innerHTML=current.notation||"";
+  document.getElementById("practiceFeedback").innerHTML="";
+  document.getElementById("typeBox").classList.add("hidden");
+  const am=document.getElementById("answerMode").value;
+  if(am==="type" || current.mode==="typeSigToScale"){
+    document.getElementById("practiceOptions").innerHTML="";
+    document.getElementById("typeBox").classList.remove("hidden");
+    document.getElementById("typedAnswer").value="";
+    document.getElementById("typedAnswer").focus();
+  } else {
+    const opts=makeOptions(current);
+    document.getElementById("practiceOptions").innerHTML=opts.map(o=>{
+      if(typeof o==="object") return `<button class="option" onclick="checkChoice('${o.value.replace(/'/g,"\\'")}',this)">${o.label}</button>`;
+      return `<button class="option" onclick="checkChoice('${o.replace(/'/g,"\\'")}',this)">${o}</button>`;
+    }).join("");
+  }
+}
+function normalize(s){return String(s).trim().replace(/\s+/g," ").replace(/ي/g,"ی").replace(/ك/g,"ک");}
+function checkChoice(ans,btn){
+  const ok=normalize(ans)===normalize(current.answer);
+  document.querySelectorAll(".option").forEach(b=>b.disabled=true);
+  btn.classList.add(ok?"correct":"wrong");
+  pTotal++; if(ok)pScore++;
+  updateStats(currentTarget.id,ok);
+  showFeedback(ok,ans);
+  updatePracticeScore();
+}
+function checkTyped(){
+  const ans=document.getElementById("typedAnswer").value;
+  const ok=normalize(ans)===normalize(current.answer);
+  pTotal++; if(ok)pScore++;
+  updateStats(currentTarget.id,ok);
+  showFeedback(ok,ans);
+  updatePracticeScore();
+}
+function showFeedback(ok,userAns){
+  const s=current.target;
+  document.getElementById("practiceFeedback").innerHTML = ok ?
+    `<div class="feedback ok">✅ آفرین! پاسخ صحیح است.</div>` :
+    `<div class="feedback bad">❌ پاسخ شما: ${userAns || "—"}<br>✅ پاسخ صحیح: ${current.answer}<br>${drawStaff(s,true)}<br>💡 ${s.name} دارای ${accText(s)} است. نت‌های تغییر یافته: ${alteredText(s)}.</div>`;
+}
+function updatePracticeScore(){
+  document.getElementById("pScore").textContent=faDigits(pScore);
+  document.getElementById("pTotal").textContent=faDigits(pTotal);
+}
+
+function startExam(){
+  exam={i:0,score:0,answers:[],questions:Array.from({length:10},()=>makeQuestion("mixed"))};
+  document.getElementById("finishExamBtn").disabled=false;
+  document.getElementById("examResult").innerHTML="";
+  renderExamQuestion();
+}
+function renderExamQuestion(){
+  if(!exam || exam.i>=exam.questions.length){finishExam();return;}
+  const q=exam.questions[exam.i];
+  document.getElementById("examStatus").textContent=`سؤال ${faDigits(exam.i+1)} از ${faDigits(exam.questions.length)}`;
+  document.getElementById("examQuestion").innerHTML=q.q;
+  document.getElementById("examNotation").innerHTML=q.notation||"";
+  const opts=makeOptions(q);
+  document.getElementById("examOptions").innerHTML=opts.map(o=>{
+    if(typeof o==="object") return `<button class="option" onclick="answerExam('${o.value.replace(/'/g,"\\'")}')">${o.label}</button>`;
+    return `<button class="option" onclick="answerExam('${o.replace(/'/g,"\\'")}')">${o}</button>`;
+  }).join("");
+}
+function answerExam(ans){
+  const q=exam.questions[exam.i];
+  const ok=normalize(ans)===normalize(q.answer);
+  if(ok) exam.score++;
+  exam.answers.push({q:q.q, user:ans, correct:q.answer, ok, scale:q.target.name});
+  exam.i++;
+  renderExamQuestion();
+}
+function finishExam(){
+  if(!exam)return;
+  document.getElementById("finishExamBtn").disabled=true;
+  document.getElementById("examQuestion").innerHTML="";
+  document.getElementById("examNotation").innerHTML="";
+  document.getElementById("examOptions").innerHTML="";
+  const rows=exam.answers.map((a,i)=>`<tr><td>${faDigits(i+1)}</td><td>${a.ok?"✅":"❌"}</td><td>${a.correct}</td><td>${a.user}</td></tr>`).join("");
+  document.getElementById("examResult").innerHTML=`<h3>نتیجه: ${faDigits(exam.score)} از ${faDigits(exam.questions.length)}</h3><table><tr><th>#</th><th>وضعیت</th><th>پاسخ صحیح</th><th>پاسخ شما</th></tr>${rows}</table>`;
+  document.getElementById("examStatus").textContent="آزمون تمام شد.";
+}
+
+function renderTable(){
+  document.getElementById("scaleTable").innerHTML=scales.map((s,i)=>`<tr><td>${faDigits(i+1)}</td><td>${s.name}</td><td>${accText(s)}</td><td>${alteredText(s)}</td></tr>`).join("");
+}
+function renderProgress(){
+  document.getElementById("progressView").innerHTML=scales.map(s=>{
+    const st=getScaleStats(s.id);
+    const pct=st.total?Math.round(st.correct/st.total*100):0;
+    return `<p><b>${s.name}</b> — ${faDigits(st.correct)} درست از ${faDigits(st.total)} | دقت ${faDigits(pct)}٪</p><div class="progressbar"><span style="width:${pct}%"></span></div>`;
+  }).join("");
+}
+function resetProgress(){
+  if(confirm("پیشرفت و قفل‌ها ریست شود؟")){
+    state={unlocked:{do:true, sol:true},stats:{},custom:state.custom||[]}; save(); init();
+  }
+}
+function saveNewScale(){
+  const item={
+    name:document.getElementById("newScaleName").value.trim(),
+    type:document.getElementById("newAccType").value,
+    count:Number(document.getElementById("newAccCount").value),
+    altered:document.getElementById("newAltered").value.trim()
+  };
+  if(!item.name){alert("نام گام را وارد کنید.");return;}
+  state.custom.push(item); save(); renderCustom();
+}
+function renderCustom(){
+  const el=document.getElementById("customScales");
+  if(!state.custom.length){el.innerHTML="هنوز گام جدیدی اضافه نشده است.";return;}
+  el.innerHTML=state.custom.map(x=>`<div class="badge">${x.name} — ${faDigits(x.count)} ${x.type==="sharp"?"دیز":x.type==="flat"?"بمل":"بدون علامت"} — ${x.altered||"—"}</div>`).join("");
+}
+function showTab(id){
+  document.querySelectorAll(".panel").forEach(p=>p.classList.add("hidden"));
+  document.getElementById(id).classList.remove("hidden");
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active", t.dataset.tab===id));
+}
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>showTab(t.dataset.tab));
+
+function init(){
+  renderScaleSelectors(); renderLearn(); renderTable(); renderProgress(); renderCustom(); updatePracticeScore();
+}
+init();
+</script>
+</body>
+</html>
