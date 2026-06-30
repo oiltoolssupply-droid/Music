@@ -47,11 +47,11 @@ button.secondary{background:#f3f4f6;color:#111827;border:1px solid #d1d5db}
 
   <section id="testPanel" class="hidden">
     <div class="card">
-      <div class="row"><button onclick="newQuestion()">🎲 سؤال تصادفی</button><button class="secondary" onclick="resetScore()">ریست امتیاز</button></div>
+      <div class="row"><button id="nextBtn" onclick="newQuestion()">سؤال بعدی</button><button class="secondary" onclick="resetScore()">ریست امتیاز</button></div>
       <div class="scorebar"><span>درست: <b id="correctCount">۰</b></span><span>غلط: <b id="wrongCount">۰</b></span><span>دقت: <b id="accuracy">۰٪</b></span></div>
     </div>
     <div class="card">
-      <div id="question" class="big">برای شروع، روی «سؤال تصادفی» بزنید.</div>
+      <div id="question" class="big">سؤال به‌صورت خودکار نمایش داده می‌شود.</div>
       <div id="signatureArea"></div>
       <div id="options" class="options"></div>
       <div id="typeAnswerBox" class="typeBox hidden"><input id="typedAnswer" placeholder="پاسخ را اینجا بنویسید"><button onclick="checkTyped()">بررسی</button></div>
@@ -84,7 +84,7 @@ function alteredText(s){return s.altered.length?s.altered.join("، "):"—"}
 function signatureHTML(s){let inner=""; if(s.id==="do"){inner=`<svg class="emptyStaff" viewBox="0 0 520 170" aria-label="سرکلید دو ماژور"><line x1="40" y1="45" x2="480" y2="45" stroke="#111" stroke-width="2"/><line x1="40" y1="65" x2="480" y2="65" stroke="#111" stroke-width="2"/><line x1="40" y1="85" x2="480" y2="85" stroke="#111" stroke-width="2"/><line x1="40" y1="105" x2="480" y2="105" stroke="#111" stroke-width="2"/><line x1="40" y1="125" x2="480" y2="125" stroke="#111" stroke-width="2"/><text x="58" y="123" font-size="78" font-family="serif">𝄞</text></svg>`}else{inner=`<img src="${imageData[s.id]}" alt="سرکلید">`} return `<div class="signatureBox">${inner}</div>`}
 function fillScaleSelect(){scaleSelect.innerHTML=scales.map(s=>`<option value="${s.id}">${s.name}</option>`).join("")}
 function renderLearn(){const s=byId(scaleSelect.value)||scales[0]; learnContent.innerHTML=`${signatureHTML(s)}<h2>${s.name}</h2><div class="kv"><div class="info"><b>علائم سرکلید</b>${accText(s)}</div><div class="info"><b>نت‌های تغییر یافته</b>${alteredText(s)}</div><div class="info"><b>نت‌های گام</b>${s.notes.join("، ")}</div><div class="info"><b>نکته حفظی</b>${s.tip}</div></div>`}
-function showTab(tab,btn){learnPanel.classList.toggle("hidden",tab!=="learn");testPanel.classList.toggle("hidden",tab!=="test");document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));btn.classList.add("active")}
+function showTab(tab,btn){learnPanel.classList.toggle("hidden",tab!=="learn");testPanel.classList.toggle("hidden",tab!=="test");document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));btn.classList.add("active");if(tab==="test"&&!currentQuestion)newQuestion()}
 function normalise(s){return String(s||"").trim().replace(/\s+/g," ").replace(/ي/g,"ی").replace(/ك/g,"ک").replace(/‌/g," ")}
 function same(a,b){return normalise(a)===normalise(b)}
 function optionButtons(opts){typeAnswerBox.classList.add("hidden");options.innerHTML=opts.map(o=>`<button class="option" onclick="checkAnswer('${String(o).replace(/'/g,"\\'")}',this)">${o}</button>`).join("")}
@@ -99,9 +99,9 @@ function makeQuestion(){const types=["signatureToScale","scaleToCount","countToS
  if(type==="typeScaleName"){q.question="نام گام این سرکلید را تایپ کنید.";q.signature=signatureHTML(s);q.answer=s.name;q.typed=true}
  if(type==="trueFalse"){let statementTrue=Math.random()>.5;let shown=statementTrue?s:rand(scales.filter(x=>x.id!==s.id));q.question=`درست یا نادرست؟ این سرکلید مربوط به «${shown.name}» است.`;q.signature=signatureHTML(s);q.answer=statementTrue?"درست":"نادرست";q.options=["درست","نادرست"]}
  return q}
-function newQuestion(){locked=false;currentQuestion=makeQuestion();question.innerHTML=currentQuestion.question;signatureArea.innerHTML=currentQuestion.signature||"";feedback.innerHTML="";currentQuestion.typed?textAnswerBox():optionButtons(currentQuestion.options)}
+function newQuestion(){locked=false;currentQuestion=makeQuestion();if(document.getElementById("nextBtn"))nextBtn.textContent="سؤال بعدی";question.innerHTML=currentQuestion.question;signatureArea.innerHTML=currentQuestion.signature||"";feedback.innerHTML="";currentQuestion.typed?textAnswerBox():optionButtons(currentQuestion.options)}
 function checkTyped(){checkAnswer(typedAnswer.value,null)}
-function checkAnswer(ans,btn){if(locked||!currentQuestion)return;locked=true;let ok=same(ans,currentQuestion.answer); if(btn){document.querySelectorAll(".option").forEach(b=>{b.disabled=true;if(same(b.textContent,currentQuestion.answer))b.classList.add("correct")});if(!ok)btn.classList.add("wrong")} ok?score.correct++:score.wrong++;saveScore();updateScore();let s=currentQuestion.scale;feedback.innerHTML= ok?`<div class="feedback ok">✅ آفرین! پاسخ صحیح است.</div>`:`<div class="feedback bad">❌ پاسخ شما: <b>${ans||"—"}</b><br>✅ پاسخ صحیح: <b>${currentQuestion.answer}</b><br><br><b>${s.name}</b> دارای ${accText(s)} است.<br>نت‌های تغییر یافته: ${alteredText(s)}<br>نت‌های گام: ${s.notes.join("، ")}</div>`;setTimeout(newQuestion,1800)}
+function checkAnswer(ans,btn){if(locked||!currentQuestion)return;locked=true;let ok=same(ans,currentQuestion.answer); if(btn){document.querySelectorAll(".option").forEach(b=>{b.disabled=true;if(same(b.textContent,currentQuestion.answer))b.classList.add("correct")});if(!ok)btn.classList.add("wrong")} ok?score.correct++:score.wrong++;saveScore();updateScore();let s=currentQuestion.scale;feedback.innerHTML= ok?`<div class="feedback ok">✅ آفرین! پاسخ صحیح است.<br><br>برای ادامه روی «سؤال بعدی» بزنید.</div>`:`<div class="feedback bad">❌ پاسخ شما: <b>${ans||"—"}</b><br>✅ پاسخ صحیح: <b>${currentQuestion.answer}</b><br><br><b>${s.name}</b> دارای ${accText(s)} است.<br>نت‌های تغییر یافته: ${alteredText(s)}<br>نت‌های گام: ${s.notes.join("، ")}<br><br>بعد از خواندن توضیح، روی «سؤال بعدی» بزنید.</div>`;if(document.getElementById("nextBtn"))nextBtn.textContent="سؤال بعدی"}
 document.addEventListener("keydown",e=>{if(e.key==="Enter"&&!typeAnswerBox.classList.contains("hidden"))checkTyped()});
 fillScaleSelect();renderLearn();updateScore();
 </script>
